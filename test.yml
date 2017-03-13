@@ -1,0 +1,14 @@
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Push params for NA preprod testing
+    param_pusher:
+      group: "na.preprod.testing"
+      version: "1.4"
+      region: "us-east-2"
+      parameters:
+        TEST_PARAM1: "TEST_VALUE1"
+        TEST_PARAM2: "TEST_VALUE2"
+        TEST_PARAM3: "TEST_VALUE3"
+        TEST_PARAM4: "TEST_VALUE4"
+        TEST_PARAM5: "TEST_VALUE5"
