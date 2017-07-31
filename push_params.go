@@ -7,6 +7,11 @@ import (
 	"crypto/sha256"
 	"strings"
 	"log"
+	"encoding/json"
+	"encoding/base64"
+	"github.com/pkg/errors"
+	"bytes"
+	"compress/gzip"
 )
 
 var (
@@ -35,12 +40,53 @@ func checksum(id string) string{
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(id)))
 }
 
+func (p *ParamArgs) serialize() (string,error){
+	//gzip -9 | base64
+	params := p.Parameters
+	//Create JSON representation of struct
+	paramsJson, err := json.Marshal(params)
+	if err != nil {
+		e := errors.New("Counld not marshall params to JSON")
+		return "",e
+	}
+	var buf bytes.Buffer
+	//Compress JSON
+	gz, err := gzip.NewWriterLevel(&buf,9)
+	if err != nil {
+		e := errors.New("Counld not initiate gzip")
+		return "",e
+	}
+	_, err = gz.Write(paramsJson)
+	gz.Flush()
+	gz.Close()
+	if err != nil {
+		e := errors.New("Could not produce JSON string from params")
+		return "",e
+	}
+	encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
+	log.Println(encoded)
+
+
+	return encoded,nil
+}
+
 func (p ParamArgs) push() map[string][]string{
 	c := ssmClient{NewClient(p.Region)}
 	mapExisting(c,p.Group)
-	var pushed []string
-	var skipped []string
-	var failed []string
+	var pushed, skipped, failed []string
+	log.Println("Checking values of single key")
+	log.Println(p.SingleKey)
+	if p.SingleKey == true {
+		serialzedParams,err := p.serialize()
+		if err != nil {
+			log.Println("Error: Could not serialize params")
+
+		}
+		//todo check length of serialized string
+		mp := make(map[string]string)
+		mp[p.Version] = serialzedParams
+		p.Parameters = mp
+	}
 	for name, value := range p.Parameters {
 		n := strings.Join([]string{p.Group,name},".")
 		id := fmt.Sprintf("%s.%s@%s",n,value,p.Version)

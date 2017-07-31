@@ -14,6 +14,7 @@ type ParamArgs struct {
 	Region     string
 	Group      string
 	Version    string
+	SingleKey   bool `json:"single_key"`
 	Parameters map[string]string
 }
 
@@ -57,6 +58,7 @@ func returnResponse(responseBody responseStruct) {
 }
 
 func main() {
+	//os.Exit(0)
 	f, err := os.OpenFile("./pusher.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)

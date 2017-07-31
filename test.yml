@@ -5,7 +5,7 @@
     param_pusher:
       group: "na.preprod.testing"
       version: "1.4"
-      region: "us-east-2"
+      region: "us-east-1"
       parameters:
         TEST_PARAM1: "TEST_VALUE1"
         TEST_PARAM2: "TEST_VALUE2"
