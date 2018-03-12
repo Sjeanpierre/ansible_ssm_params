@@ -6,16 +6,18 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 )
 
 //When using binary modules Ansible creates a json file containing all the arguments for the module to use
 //The only argument passed from Ansible will be the filepath
 type ParamArgs struct {
-	Region     string
-	Group      string
-	Version    string
-	SingleKey   bool `json:"single_key"`
-	Parameters map[string]string
+	Region         string
+	Group          string
+	Version        string
+	SingleKey      bool `json:"single_key"`
+	AllowOverWrite bool
+	Parameters     map[string]string
 }
 
 //Ansible requires responses to be returned in JSON format with the following details
@@ -59,7 +61,7 @@ func returnResponse(responseBody responseStruct) {
 
 func main() {
 	//os.Exit(0)
-	f, err := os.OpenFile("./pusher.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	f, err := os.OpenFile("./pusher.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
@@ -93,9 +95,19 @@ func main() {
 	}
 	//todo,validate body
 	log.Printf("Received params: %+v", moduleArgs)
+	//Set config to disable overwrite from env var
+	overWriteEnabled, err := strconv.ParseBool(os.Getenv("ALLOW_PARAM_OVERWRITE"))
+	if err != nil {
+		log.Println("Could not parse value for ALLOW_PARAM_OVERWRITE environment varibable")
+		log.Println("Defaulting to default behavior of true")
+		moduleArgs.AllowOverWrite = true
+	} else {
+		moduleArgs.AllowOverWrite = overWriteEnabled
+	}
+	//All the magic happens here
 	results := moduleArgs.push()
 	if len(results["failed"]) > 0 {
-		resp.Msg = fmt.Sprintf("Failed to write all params:" +
+		resp.Msg = fmt.Sprintf("Failed to write all params:"+
 			" Pushed = %+v  Skipped = %v  Failed = %v",
 			results["pushed"],
 			results["skipped"],
@@ -106,7 +118,7 @@ func main() {
 
 	if len(results["pushed"]) == 0 {
 		resp.Changed = false
-		resp.Msg = fmt.Sprintf("No params were written:" +
+		resp.Msg = fmt.Sprintf("No params were written:"+
 			" Pushed = %+v  Skipped = %v  Failed = %v",
 			results["pushed"],
 			results["skipped"],
