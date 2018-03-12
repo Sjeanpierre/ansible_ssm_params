@@ -6,3 +6,7 @@ param_pusher.iml
 test.sh
 
 pusher.log
+
+param_pusher-debug
+
+library/param_pusher
